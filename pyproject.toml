@@ -1,0 +1,16 @@
+[project]
+name = "owl-ranger"
+version = "0.1.0"
+description = "Automated data collection for OWL payloads"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pyowl",
+    "numpy",
+    "tqdm",
+    "pyserial",
+    "pandas",
+]
+
+[tool.uv.sources]
+pyowl = { git = "ssh://git@github.com/LENS-TUGraz/pyowl.git" }
