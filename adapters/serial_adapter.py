@@ -1,7 +1,7 @@
 import serial
 import json
 import logging
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 from .base import MeasurementAdapter
 
@@ -33,31 +33,23 @@ class SerialAdapter(MeasurementAdapter):
             logger.info(f"[SerialAdapter:{self.name}] Disconnecting from {self.port}...")
             self.serial.close()
 
-    def measure_batch(self, batch_size: int) -> List[Dict[str, Any]]:
+    def measure(self) -> Dict[str, Any]:
         """
-        Requests and reads a batch of measurements from the serial port.
+        Reads a single measurement from the serial port.
         Assumes the device responds with one JSON line per measurement.
         """
-        logger.info(f"[SerialAdapter:{self.name}] Measuring batch of {batch_size}...")
-        
-        # Depending on the firmware, a command might need to be sent here, e.g.:
-        # self.serial.write(f"MEASURE {batch_size}\n".encode())
-        
-        results = []
-        for _ in range(batch_size):
-            line = self.serial.readline().decode('utf-8').strip()
-            
-            if not line:
-                logger.warning(f"[{self.name}] Timeout reading from serial")
-                continue
-                
-            try:
-                # Assuming JSON reporting format for generic extensibility
-                data = json.loads(line)
-                results.append(data)
-            except json.JSONDecodeError:
-                # Fallback to simple generic text reading if unparseable
-                logger.warning(f"[{self.name}] Failed to parse JSON, saving raw: {line}")
-                results.append({"raw_response": line})
+        line = self.serial.readline().decode('utf-8').strip()
 
-        return results
+        if not line:
+            logger.warning(f"[{self.name}] Timeout reading from serial")
+            return {"status": "timeout", "raw_response": ""}
+
+        try:
+            # Assuming JSON reporting format for generic extensibility
+            data = json.loads(line)
+            data["status"] = "success"
+            return data
+        except json.JSONDecodeError:
+            # Fallback to simple generic text reading if unparseable
+            logger.warning(f"[{self.name}] Failed to parse JSON, saving raw: {line}")
+            return {"status": "failed", "raw_response": line}

@@ -131,21 +131,21 @@ def main():
             current_angle = step_size * i + args.angle_offset
             owl.set_target(current_angle)
             sleep(args.step_delay)
-            measured_angle = owl.get_absolute_angle()
-            raw_angle = owl.get_mechanical_angle()
-            
-            # Fetch measurement batches from all connected adapters
-            for adapter in adapters:
-                batch = adapter.measure_batch(args.samples)
-                for sample_idx, meas in enumerate(batch):
-                    # Inject base metadata into every dictionary emitted by the device
+
+            # Collect samples one at a time across all adapters, interleaved,
+            # so each adapter's readings are as close in time as possible.
+            for sample_idx in range(args.samples):
+                for adapter in adapters:
+                    measured_angle = owl.get_absolute_angle()
+                    raw_angle = owl.get_mechanical_angle()
+                    meas = adapter.measure()
                     meas_record = {
                         "angle": current_angle,
                         "measured_angle": measured_angle,
                         "raw_angle": raw_angle,
                         "adapter_name": adapter.name,
                         "sample_idx": sample_idx,
-                        **meas  # include whatever varied stats the adapter gave us
+                        **meas
                     }
                     all_measurements.append(meas_record)
 

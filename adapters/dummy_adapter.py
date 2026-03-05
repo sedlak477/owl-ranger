@@ -1,5 +1,5 @@
 import random
-from typing import List, Dict, Any
+from typing import Dict, Any
 from time import sleep
 
 from .base import MeasurementAdapter
@@ -25,16 +25,10 @@ class DummyAdapter(MeasurementAdapter):
     def __exit__(self, exc_type, exc_val, exc_tb):
         logger.info(f"[DummyAdapter:{self.name}] Disconnecting...")
 
-    def measure_batch(self, batch_size: int) -> List[Dict[str, Any]]:
-        logger.info(f"[DummyAdapter:{self.name}] Measuring batch of {batch_size}...")
-        results = []
-        for _ in range(batch_size):
-            # Simulate device latency
-            sleep(self.delay)
-            # Generate dummy data
-            meas = {
-                "dummy_value": random.uniform(self.min_val, self.max_val),
-                "dummy_status": "OK"
-            }
-            results.append(meas)
-        return results
+    def measure(self) -> Dict[str, Any]:
+        """Returns a single dummy measurement."""
+        sleep(self.delay)
+        return {
+            "dummy_value": random.uniform(self.min_val, self.max_val),
+            "status": "success",
+        }

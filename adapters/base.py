@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 class MeasurementAdapter(ABC):
     """
@@ -33,16 +33,14 @@ class MeasurementAdapter(ABC):
         pass
 
     @abstractmethod
-    def measure_batch(self, batch_size: int) -> List[Dict[str, Any]]:
+    def measure(self) -> Dict[str, Any]:
         """
-        Request a batch of measurements from the device.
+        Request a single measurement from the device.
         
-        Args:
-            batch_size: Number of measurements to collect.
-            
         Returns:
-            A list of measurement dictionaries. Each dictionary represents
-            one measurement and can contain arbitrary key-value pairs representing
-            the read data. Minimum expected structure is adapter-dependent.
+            A dictionary representing one measurement. Can contain arbitrary
+            key-value pairs. Must always include a 'status' key with value
+            'success', 'failed', or 'timeout'. On failure, numeric fields
+            should be set to float('nan').
         """
         pass

@@ -1,8 +1,7 @@
 import serial
 import re
 import logging
-import math
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 from .base import MeasurementAdapter
 
@@ -41,53 +40,48 @@ class QM33120WAdapter(MeasurementAdapter):
             logger.info(f"[QM33120WAdapter:{self.name}] Disconnecting from {self.port}...")
             self.serial.close()
 
-    def measure_batch(self, batch_size: int) -> List[Dict[str, Any]]:
+    def measure(self) -> Dict[str, Any]:
         """
-        Reads lines from the serial port until it finds `batch_size` 
-        valid measurements containing distance and PDoA.
-        """        
-        # Flush the buffer to ensure we only get fresh measurements starting from now
-        if self.serial and self.serial.is_open:
-            self.serial.reset_input_buffer()
+        Reads a single line from the serial port and returns a measurement.
+        Lines not containing 'distance[cm]' are treated as failures.
+        """
+        # Discard any buffered data so we read the freshest output from the device
+        self.serial.reset_input_buffer()
+        line = self.serial.readline().decode('utf-8', errors='ignore').strip()
 
-        results = []
-        
-        # We might need to send a command to start ranging, 
-        # but the manual suggests it might stream INITF/RESPF logs automatically 
-        # once the session is created through CLI commands or auto-started.
-        # If an explicit trigger is needed per batch, it would be added here.
-        
-        # We read lines until we collect enough samples. 
-        # We add a safety fallback counter to avoid spinning forever if disconnected.
-        max_attempts = batch_size * 10
-        attempts = 0
-        
-        while len(results) < batch_size and attempts < max_attempts:
-            line = self.serial.readline().decode('utf-8', errors='ignore').strip()
-            attempts += 1
-            
-            if not line:
-                continue
-                
-            match_dist = self.pattern_distance.search(line)
-            if match_dist:
-                distance_cm = float(match_dist.group(1))
-                
-                # Optional fields
-                match_pdoa = self.pattern_loc_az_pdoa.search(line)
-                loc_az_pdoa = float(match_pdoa.group(1)) if match_pdoa else float('nan')
-                
-                match_az = self.pattern_loc_az.search(line)
-                loc_az = float(match_az.group(1)) if match_az else float('nan')
-                
-                results.append({
-                    "distance_cm": distance_cm,
-                    "loc_az_pdoa": loc_az_pdoa,
-                    "loc_az": loc_az,
-                    "raw_response": line
-                })
-                
-        if len(results) < batch_size:
-            logger.warning(f"[{self.name}] Only collected {len(results)}/{batch_size} measurements due to timeouts.")
+        if not line:
+            logger.warning(f"[{self.name}] Timeout reading from serial")
+            return {
+                "distance_cm": float('nan'),
+                "loc_az_pdoa": float('nan'),
+                "loc_az": float('nan'),
+                "status": "timeout",
+                "raw_response": "",
+            }
 
-        return results
+        match_dist = self.pattern_distance.search(line)
+        if not match_dist:
+            logger.warning(f"[{self.name}] Failed to parse distance from response: {line}")
+            return {
+                "distance_cm": float('nan'),
+                "loc_az_pdoa": float('nan'),
+                "loc_az": float('nan'),
+                "status": "failed",
+                "raw_response": line,
+            }
+
+        distance_cm = float(match_dist.group(1))
+
+        match_pdoa = self.pattern_loc_az_pdoa.search(line)
+        loc_az_pdoa = float(match_pdoa.group(1)) if match_pdoa else float('nan')
+
+        match_az = self.pattern_loc_az.search(line)
+        loc_az = float(match_az.group(1)) if match_az else float('nan')
+
+        return {
+            "distance_cm": distance_cm,
+            "loc_az_pdoa": loc_az_pdoa,
+            "loc_az": loc_az,
+            "status": "success",
+            "raw_response": line,
+        }
