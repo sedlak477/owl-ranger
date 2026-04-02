@@ -26,6 +26,7 @@ class SerialAdapter(MeasurementAdapter):
             baudrate=self.baudrate,
             timeout=self.timeout
         )
+        self.serial.reset_input_buffer()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -38,7 +39,8 @@ class SerialAdapter(MeasurementAdapter):
         Reads a single measurement from the serial port.
         Assumes the device responds with one JSON line per measurement.
         """
-        line = self.serial.readline().decode('utf-8').strip()
+        self.serial.reset_input_buffer()
+        line = self.serial.readline().decode('utf-8', errors='ignore').strip()
 
         if not line:
             logger.warning(f"[{self.name}] Timeout reading from serial")

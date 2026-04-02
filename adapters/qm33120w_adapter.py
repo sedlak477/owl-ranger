@@ -19,7 +19,6 @@ class QM33120WAdapter(MeasurementAdapter):
         self.timeout = float(timeout)
         self.serial = None
         
-        # Regex to parse the relevant fields out of the response:
         self.pattern_distance = re.compile(r"distance\[cm\]=([0-9.-]+)")
         self.pattern_loc_az_pdoa = re.compile(r"loc_az_pdoa=([0-9.-]+)")
         self.pattern_loc_az = re.compile(r"loc_az=([0-9.-]+)")
@@ -31,7 +30,6 @@ class QM33120WAdapter(MeasurementAdapter):
             baudrate=self.baudrate,
             timeout=self.timeout
         )
-        # Flush initial garbage
         self.serial.reset_input_buffer()
         return self
 
@@ -50,7 +48,7 @@ class QM33120WAdapter(MeasurementAdapter):
         line = self.serial.readline().decode('utf-8', errors='ignore').strip()
 
         if not line:
-            logger.warning(f"[{self.name}] Timeout reading from serial")
+            logger.warning(f"[QM33120WAdapter:{self.name}] Timeout reading from serial")
             return {
                 "distance_cm": float('nan'),
                 "loc_az_pdoa": float('nan'),
@@ -61,7 +59,7 @@ class QM33120WAdapter(MeasurementAdapter):
 
         match_dist = self.pattern_distance.search(line)
         if not match_dist:
-            logger.warning(f"[{self.name}] Failed to parse distance from response: {line}")
+            logger.warning(f"[QM33120WAdapter:{self.name}] Failed to parse distance from response: {line}")
             return {
                 "distance_cm": float('nan'),
                 "loc_az_pdoa": float('nan'),
