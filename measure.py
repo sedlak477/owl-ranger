@@ -140,10 +140,12 @@ def main():
                     raw_angle = owl.get_mechanical_angle()
                     meas = adapter.measure()
                     meas_record = {
+                        "timestamp": datetime.now().isoformat(),
                         "angle": current_angle,
                         "measured_angle": measured_angle,
                         "raw_angle": raw_angle,
                         "adapter_name": adapter.name,
+                        "angle_idx": i,
                         "sample_idx": sample_idx,
                         **meas
                     }
