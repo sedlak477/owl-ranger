@@ -13,4 +13,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-pyowl = { git = "ssh://git@github.com/LENS-TUGraz/pyowl.git" }
+pyowl = { git = "https://github.com/LENS-TUGraz/pyowl.git" }
