@@ -61,7 +61,7 @@ dependencies = [
 requires-dist = [
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pyowl", git = "ssh://git@github.com/LENS-TUGraz/pyowl.git" },
+    { name = "pyowl", git = "https://github.com/LENS-TUGraz/pyowl.git" },
     { name = "pyserial" },
     { name = "tqdm" },
 ]
@@ -98,7 +98,7 @@ wheels = [
 [[package]]
 name = "pyowl"
 version = "0.1.0"
-source = { git = "ssh://git@github.com/LENS-TUGraz/pyowl.git#0940c8bd1d87ccf0b5b85c9b45c792a7d4cbeee0" }
+source = { git = "https://github.com/LENS-TUGraz/pyowl.git#9a61e890cc1dc2667fd8079f11418887c2a5aa30" }
 dependencies = [
     { name = "pyserial" },
 ]
