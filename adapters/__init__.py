@@ -22,7 +22,9 @@ def get_adapter(adapter_type: str, name: str, **kwargs) -> MeasurementAdapter:
 from .dummy_adapter import DummyAdapter
 from .serial_adapter import SerialAdapter
 from .qm33120w_adapter import QM33120WAdapter
+from .nrf54_ble_cs_adapter import NRF54BLECSAdapter
 
 register_adapter("dummy", DummyAdapter)
 register_adapter("serial", SerialAdapter)
 register_adapter("qm33120w", QM33120WAdapter)
+register_adapter("nrf54_ble_cs", NRF54BLECSAdapter)

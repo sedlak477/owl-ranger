@@ -1,5 +1,5 @@
 import serial
-import json
+import re
 import logging
 from typing import Dict, Any
 
@@ -18,9 +18,9 @@ class NRF54BLECSAdapter(MeasurementAdapter):
         self.timeout = float(timeout)
         self.serial = None
         
-        self.pattern_ifft = re.compile(r"ifft: (.*)")
-        self.pattern_phase_slope = re.compile(r"phase_slope: (.*)")
-        self.pattern_rtt = re.compile(r"rtt: (.*)")
+        self.pattern_ifft = re.compile(r"ifft: ([0-9.]+)")
+        self.pattern_phase_slope = re.compile(r"phase_slope: ([0-9.]+)")
+        self.pattern_rtt = re.compile(r"rtt: ([0-9.]+)")
 
     def __enter__(self):
         logger.info(f"[NRF54BLECSAdapter:{self.name}] Connecting to {self.port} at {self.baudrate} bps...")
