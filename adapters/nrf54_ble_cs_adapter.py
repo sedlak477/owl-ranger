@@ -44,9 +44,10 @@ class NRF54BLECSAdapter(MeasurementAdapter):
         Reads a single measurement from the serial port.
         The reading includes the IFFT, phase slope, and RTT distance estimates.
         """
-        self.serial.reset_input_buffer()
         line = self.serial.readline().decode('utf-8', errors='ignore').strip()
-
+        while self.serial.in_waiting > 0:
+            line = self.serial.readline().decode('utf-8', errors='ignore').strip()
+            
         if not line:
             logger.warning(f"[NRF54BLECSAdapter:{self.name}] Timeout reading from serial")
             return {"status": "serial_timeout"}
