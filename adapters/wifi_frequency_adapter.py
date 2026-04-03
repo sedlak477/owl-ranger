@@ -37,5 +37,5 @@ class WifiFrequencyAdapter(MeasurementAdapter):
             }
 
         return {
-            "wifi_freq": int(freq_match.group(1)),
+            "wifi_freq": float(freq_match.group(1)),
         }
