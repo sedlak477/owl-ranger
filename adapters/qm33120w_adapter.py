@@ -12,11 +12,11 @@ class QM33120WAdapter(MeasurementAdapter):
     Adapter for Qorvo QM33120W running the CLI binary.
     Parses textual logs containing 'distance[cm]' and 'loc_az_pdoa'.
     """
-    def __init__(self, name: str, port: str, baudrate: str = "115200", timeout: str = "1", **kwargs):
+    def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 1.0, **kwargs):
         super().__init__(name, **kwargs)
         self.port = port
-        self.baudrate = int(baudrate)
-        self.timeout = float(timeout)
+        self.baudrate = baudrate
+        self.timeout = timeout
         self.serial = None
         
         self.pattern_distance = re.compile(r"distance\[cm\]=([0-9.-]+)")

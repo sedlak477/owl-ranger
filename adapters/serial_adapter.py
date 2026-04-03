@@ -12,11 +12,11 @@ class SerialAdapter(MeasurementAdapter):
     A generic serial adapter supporting textual (JSON or CSV-like) 
     measurements from embedded devices.
     """
-    def __init__(self, name: str, port: str, baudrate: str = "115200", timeout: str = "1", **kwargs):
+    def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 1.0, **kwargs):
         super().__init__(name, **kwargs)
         self.port = port
-        self.baudrate = int(baudrate)
-        self.timeout = float(timeout)
+        self.baudrate = baudrate
+        self.timeout = timeout
         self.serial = None
 
     def __enter__(self):
