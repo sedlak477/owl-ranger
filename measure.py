@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument("--samples", type=int, default=10, help="Measurements per angle (default: 10)")
     parser.add_argument("--step-delay", type=float, default=1.0, help="Delay between angle steps in seconds (default: 1.0)")
     parser.add_argument("--initial-backoff", type=float, default=3.0, help="Initial backoff delay in seconds (default: 3.0)")
+    parser.add_argument("--no-led", action="store_true", help="Turn off the LED during measurement (default: False)")
     parser.add_argument("--out", type=str, default="out", help="Output directory (default: 'out')")
     parser.add_argument("--comment", type=str, default="", help="Optional comment to include in the sidecar metadata")
     parser.add_argument(
@@ -110,57 +111,64 @@ def main():
     if owl_port.lower() == "auto":
         owl_port = find_owl_port()
 
-    with ExitStack() as stack:
-        logger.info(f"Initializing OWL platform on {owl_port}...")
-        owl = stack.enter_context(OWL(owl_port))
-        owl.set_target(0)
-        owl._serial.flush()
-        sleep(args.initial_backoff)
+    try:
+        with ExitStack() as stack:
+            logger.info(f"Initializing OWL platform on {owl_port}...")
+            owl = stack.enter_context(OWL(owl_port))
+            if not args.no_led:
+                owl.set_LED(True)
+            owl.set_target(0)
+            owl._serial.flush()
+            sleep(args.initial_backoff)
 
-        logger.info("Initializing measuring adapters...")
-        adapters = []
-        for adapter_instance in args.adapter:
-            ready_adapter = stack.enter_context(adapter_instance)
-            adapters.append(ready_adapter)
+            logger.info("Initializing measuring adapters...")
+            adapters = []
+            for adapter_instance in args.adapter:
+                ready_adapter = stack.enter_context(adapter_instance)
+                adapters.append(ready_adapter)
+                
+            logger.info("Initialization complete.")
             
-        logger.info("Initialization complete.")
+            # We start with empty results list, will be populated within the loop
+            pbar_outer = tqdm(range(args.steps), desc="Overall Progress")
+            for i in pbar_outer:
+                current_angle = step_size * i + args.angle_offset
+                owl.set_target(current_angle)
+                sleep(args.step_delay)
+
+                # Collect samples one at a time across all adapters, interleaved,
+                # so each adapter's readings are as close in time as possible.
+                for sample_idx in tqdm(range(args.samples), desc="Samples", leave=False):
+                    for adapter in adapters:
+                        measured_angle = owl.get_absolute_angle()
+                        raw_angle = owl.get_mechanical_angle()
+                        meas = adapter.measure()
+                        meas_record = {
+                            "timestamp": datetime.now().isoformat(),
+                            "angle": current_angle,
+                            "measured_angle": measured_angle,
+                            "raw_angle": raw_angle,
+                            "adapter_name": adapter.name,
+                            "angle_idx": i,
+                            "sample_idx": sample_idx,
+                            **meas
+                        }
+                        all_measurements.append(meas_record)
+
+        df = pd.DataFrame(all_measurements)
         
-        # We start with empty results list, will be populated within the loop
-        pbar_outer = tqdm(range(args.steps), desc="Overall Progress")
-        for i in pbar_outer:
-            current_angle = step_size * i + args.angle_offset
-            owl.set_target(current_angle)
-            sleep(args.step_delay)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{args.out}/{timestamp}.csv"
 
-            # Collect samples one at a time across all adapters, interleaved,
-            # so each adapter's readings are as close in time as possible.
-            for sample_idx in range(args.samples):
-                for adapter in adapters:
-                    measured_angle = owl.get_absolute_angle()
-                    raw_angle = owl.get_mechanical_angle()
-                    meas = adapter.measure()
-                    meas_record = {
-                        "timestamp": datetime.now().isoformat(),
-                        "angle": current_angle,
-                        "measured_angle": measured_angle,
-                        "raw_angle": raw_angle,
-                        "adapter_name": adapter.name,
-                        "angle_idx": i,
-                        "sample_idx": sample_idx,
-                        **meas
-                    }
-                    all_measurements.append(meas_record)
+        df.to_csv(filename, index=False)
+        logger.info(f"Measurements saved to {filename}")
 
-    df = pd.DataFrame(all_measurements)
-    
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    filename = f"{args.out}/{timestamp}.csv"
+        sidecar_filename = f"{args.out}/{timestamp}.md"
+        create_sidecar(sidecar_filename, args, adapters, timestamp)
 
-    df.to_csv(filename, index=False)
-    logger.info(f"Measurements saved to {filename}")
-
-    sidecar_filename = f"{args.out}/{timestamp}.md"
-    create_sidecar(sidecar_filename, args, adapters, timestamp)
+    finally:
+        if not args.no_led:
+            owl.set_LED(False)
     
     # Sound a bell to indicate completion
     print('\a', end='', flush=True)
