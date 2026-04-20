@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 import os
 from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from pyowl import OWL
 import math
 from time import sleep
@@ -11,6 +12,7 @@ from contextlib import ExitStack
 import uuid
 import logging
 import serial.tools.list_ports
+from wakepy import keep
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -111,10 +113,16 @@ def main():
     if owl_port.lower() == "auto":
         owl_port = find_owl_port()
 
-    try:
-        with ExitStack() as stack:
-            logger.info(f"Initializing OWL platform on {owl_port}...")
-            owl = stack.enter_context(OWL(owl_port))
+    with ExitStack() as stack:
+        # Make sure logs don't mess up the progress bars
+        stack.enter_context(logging_redirect_tqdm())
+        # Keep the system awake during the measurement
+        stack.enter_context(keep.running())
+        
+        logger.info(f"Initializing OWL platform on {owl_port}...")
+        owl = stack.enter_context(OWL(owl_port))
+
+        try:
             if not args.no_led:
                 owl.set_LED(True)
             owl.set_target(0)
@@ -155,20 +163,20 @@ def main():
                         }
                         all_measurements.append(meas_record)
 
-        df = pd.DataFrame(all_measurements)
-        
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = f"{args.out}/{timestamp}.csv"
+            df = pd.DataFrame(all_measurements)
+            
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            filename = f"{args.out}/{timestamp}.csv"
 
-        df.to_csv(filename, index=False)
-        logger.info(f"Measurements saved to {filename}")
+            df.to_csv(filename, index=False)
+            logger.info(f"Measurements saved to {filename}")
 
-        sidecar_filename = f"{args.out}/{timestamp}.md"
-        create_sidecar(sidecar_filename, args, adapters, timestamp)
+            sidecar_filename = f"{args.out}/{timestamp}.md"
+            create_sidecar(sidecar_filename, args, adapters, timestamp)
 
-    finally:
-        if not args.no_led:
-            owl.set_LED(False)
+        finally:
+            if not args.no_led:
+                owl.set_LED(False)
     
     # Sound a bell to indicate completion
     print('\a', end='', flush=True)

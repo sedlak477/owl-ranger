@@ -22,7 +22,6 @@ class NRF54BLECSAdapter(MeasurementAdapter):
         self.pattern_phase_slope = re.compile(r"phase_slope: *([0-9.]+)")
         self.pattern_rtt = re.compile(r"rtt: *([0-9.]+)")
         self.pattern_tone_quality = re.compile(r"tone_quality: *([0-9]+)")
-        self.pattern_channel_iq = re.compile(r"c([0-9]+)\((-?[0-9.]+);(-?[0-9.]+)\|(-?[0-9.]+);(-?[0-9.]+)\)")
 
     def __enter__(self):
         logger.info(f"[NRF54BLECSAdapter:{self.name}] Connecting to {self.port} at {self.baudrate} bps...")
@@ -68,21 +67,12 @@ class NRF54BLECSAdapter(MeasurementAdapter):
         phase_slope = float(match_phase_slope.group(1))
         rtt = float(match_rtt.group(1))
         tone_quality = int(match_tone_quality.group(1)) if match_tone_quality else None
-        channel_iq = {}
-        for match in self.pattern_channel_iq.finditer(line):
-            channel = int(match.group(1))
-            init_real = float(match.group(2))
-            init_imag = float(match.group(3))
-            ref_real = float(match.group(4))
-            ref_imag = float(match.group(5))
-            channel_iq[channel] = (init_real, init_imag, ref_real, ref_imag)
 
         return {
             "ifft": ifft,
             "phase_slope": phase_slope,
             "rtt": rtt,
             "tone_quality": tone_quality,
-            "channel_iq": channel_iq,
             "status": "success",
             "raw_response": line,
         }

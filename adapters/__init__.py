@@ -22,10 +22,14 @@ from .dummy_adapter import DummyAdapter
 from .serial_adapter import SerialAdapter
 from .qm33120w_adapter import QM33120WAdapter
 from .nrf54_ble_cs_adapter import NRF54BLECSAdapter
+from .nrf54_ble_cs_iq_adapter import NRF54BLECSIQAdapter
 from .wifi_frequency_adapter import WifiFrequencyAdapter
+from .qualisys_adapter import QualisysAdapter
 
 register_adapter("dummy", DummyAdapter)
 register_adapter("serial", SerialAdapter)
 register_adapter("qm33120w", QM33120WAdapter)
 register_adapter("nrf54_ble_cs", NRF54BLECSAdapter)
+register_adapter("nrf54_ble_cs_iq", NRF54BLECSIQAdapter)
 register_adapter("wifi_frequency", WifiFrequencyAdapter)
+register_adapter("qualisys", QualisysAdapter)

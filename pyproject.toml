@@ -10,6 +10,12 @@ dependencies = [
     "tqdm",
     "pyserial",
     "pandas",
+    "wakepy>=1.0.0",
+]
+
+[project.optional-dependencies]
+qualisys = [
+    "qtm-rt>=3.0.2",
 ]
 
 [tool.uv.sources]

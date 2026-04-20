@@ -11,9 +11,8 @@ Example usage:
 
 ```sh
 uv run measure.py \
-  --adapter 'type=<adapter>,name=<human-readable-name>,port=<serial-port>' \
+  --adapter 'type=<adapter>,name=<adapter identifier>,port=<serial-port>' \
   --steps <number-of-steps> \
-  --step-delay <delay-after-each-step-in-seconds> \
   --comment "Comment to identify the measurement"
 ```
 
@@ -53,6 +52,13 @@ For reading from an nRF54 radio using the Nordic Channel Sounding example.
 - `port`: **Required**. Serial port.
 - `baudrate`: Connection speed (default: `115200`).
 
+#### `nrf54_ble_cs_iq`
+
+For reading from an nRF54 radio using custom Channel Sounding firmware which forwards raw IQ values.
+
+- `port`: **Required**. Serial port.
+- `baudrate`: Connection speed (default: `1000000`).
+
 #### `serial`
 
 A generic adapter that reads JSON-formatted lines from a serial port.
@@ -64,7 +70,20 @@ A generic adapter that reads JSON-formatted lines from a serial port.
 
 Captures the current Wi-Fi frequency/channel of the host machine.
 
+Requires `iw` command line tool to be installed.
+
 - `interface`: **Required**. Wi-Fi interface name (e.g., `wlan0`).
+
+#### `qualisys`
+
+For reading from a Qualisys motion capture system.
+
+Requires `qualisys` optional dependencies, install with `uv sync --extra qualisys`.
+
+Currently on supports 6DOF body tracking with euler angles.
+
+- `host`: **Required**. Hostname or IP address of the Qualisys system.
+- `port`: (default: `22223`). Port for the Qualisys system.
 
 #### `dummy`
 
