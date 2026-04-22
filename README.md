@@ -85,6 +85,14 @@ Currently on supports 6DOF body tracking with euler angles.
 - `host`: **Required**. Hostname or IP address of the Qualisys system.
 - `port`: (default: `22223`). Port for the Qualisys system.
 
+#### `pico_nrf24_sniffer`
+
+For reading 2.4GHz ISM band channel occupancy from a Raspberry Pi Pico with an nRF24L01 module.
+See TODO for firmware.
+
+- `port`: **Required**. Serial port.
+- `baudrate`: Connection speed (default: `115200`).
+
 #### `dummy`
 
 Generates random values for testing without hardware.
