@@ -60,7 +60,7 @@ def parse_args():
         action="append", 
         default=[],
         type=parse_adapter_config,
-        help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
+        help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial_ndjson,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
     )
     return parser.parse_args()
 
