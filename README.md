@@ -59,12 +59,13 @@ For reading from an nRF54 radio using custom Channel Sounding firmware which for
 - `port`: **Required**. Serial port.
 - `baudrate`: Connection speed (default: `1000000`).
 
-#### `serial`
+#### `serial_ndjson`
 
-A generic adapter that reads JSON-formatted lines from a serial port.
+A generic adapter that reads NDJSON-formatted lines from a serial port.
 
 - `port`: **Required**. Serial port.
 - `baudrate`: (default: `115200`).
+- `timeout`: Read timeout in seconds (default: `3.0`).
 
 #### `wifi_frequency`
 

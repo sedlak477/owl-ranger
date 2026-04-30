@@ -5,6 +5,7 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from pyowl import OWL
 import math
+import time
 from time import sleep
 import argparse
 import pandas as pd
@@ -16,6 +17,8 @@ from wakepy import keep
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+logging.getLogger("wakepy").setLevel(logging.WARNING)
+logging.getLogger("tqdm").setLevel(logging.WARNING)
 
 from adapters import get_adapter, MeasurementAdapter
 
@@ -57,7 +60,7 @@ def parse_args():
         action="append", 
         default=[],
         type=parse_adapter_config,
-        help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
+        help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial_ndjson,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
     )
     return parser.parse_args()
 
@@ -72,7 +75,8 @@ def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, time
         f.write(f"- **Number of Angle Steps**: {args.steps}\n")
         f.write(f"- **Measurements per Angle**: {args.samples}\n")
         f.write(f"- **Adapters Configured**: {len(adapters)}\n")
-        f.write(f"- **Timestamp**: {timestamp}\n\n")
+        pretty_ts = datetime.strptime(timestamp, "%Y%m%d%H%M%S").strftime("%A, %d. %b %Y %H:%M:%S %Z")
+        f.write(f"- **Timestamp**: {pretty_ts} ({timestamp})\n\n")
         
         if adapters:
             f.write("## Adapter Configurations\n\n")
@@ -104,6 +108,8 @@ def find_owl_port() -> str:
 def main():
     args = parse_args()
     os.makedirs(args.out, exist_ok=True)
+
+    start_time = time.time()
 
     step_size = 2 * math.pi / args.steps
     all_measurements = []
@@ -177,6 +183,11 @@ def main():
         finally:
             if not args.no_led:
                 owl.set_LED(False)
+    
+    duration = time.time() - start_time
+    minutes = int(duration // 60)
+    seconds = duration % 60
+    logger.info(f"Measurement took {minutes} min {seconds:.0f} sec")
     
     # Sound a bell to indicate completion
     print('\a', end='', flush=True)
