@@ -106,3 +106,7 @@ Generates random values for testing without hardware.
 
 [owl-firmware](https://github.com/sedlak477/owl-firmware): The firmware for the OWL platform.  
 [pyowl](https://github.com/sedlak477/pyowl): A python library for interacting with the OWL.
+
+## AI Disclosure
+
+Large parts of the project were created with the help of AI tooling.
