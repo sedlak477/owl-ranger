@@ -101,3 +101,8 @@ Generates random values for testing without hardware.
 - `delay`: Simulated latency in seconds (default: `0.05`).
 
 ---
+
+## Related repositories
+
+[owl-firmware](https://github.com/sedlak477/owl-firmware): The firmware for the OWL platform.
+[pyowl](https://github.com/sedlak477/pyowl): A python library for interacting with the OWL.
