@@ -76,7 +76,7 @@ qualisys = [
 requires-dist = [
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pyowl", git = "https://github.com/LENS-TUGraz/pyowl.git" },
+    { name = "pyowl", git = "https://github.com/sedlak477/pyowl.git" },
     { name = "pyserial" },
     { name = "qtm-rt", marker = "extra == 'qualisys'", specifier = ">=3.0.2" },
     { name = "tqdm" },
@@ -116,7 +116,7 @@ wheels = [
 [[package]]
 name = "pyowl"
 version = "0.1.0"
-source = { git = "https://github.com/LENS-TUGraz/pyowl.git#8e096a39688c73b2bb2e01f5a5a1e40dfc56489e" }
+source = { git = "https://github.com/sedlak477/pyowl.git#8e096a39688c73b2bb2e01f5a5a1e40dfc56489e" }
 dependencies = [
     { name = "pyserial" },
 ]

@@ -19,4 +19,4 @@ qualisys = [
 ]
 
 [tool.uv.sources]
-pyowl = { git = "https://github.com/LENS-TUGraz/pyowl.git" }
+pyowl = { git = "https://github.com/sedlak477/pyowl.git" }
