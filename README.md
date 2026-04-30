@@ -24,8 +24,6 @@ uv run measure.py \
 | `--angle-offset`    | `float` | `0.0`   | Initial angle offset in radians.                                         |
 | `--steps`           | `int`   | `180`   | Number of angle steps (full 360° rotation divided by this).              |
 | `--samples`         | `int`   | `10`    | Measurements per angle step.                                             |
-| `--step-delay`      | `float` | `1.0`   | Delay between angle steps in seconds.                                    |
-| `--initial-backoff` | `float` | `3.0`   | Initial backoff delay in seconds.                                        |
 | `--no-led`          | `bool`  | `False` | Don't use the user LED to indicate progress.                             |
 | `--out`             | `str`   | `out`   | Output directory.                                                        |
 | `--comment`         | `str`   | `""`    | Optional comment for metadata.                                           |

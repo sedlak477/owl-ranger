@@ -50,8 +50,6 @@ def parse_args():
     parser.add_argument("--angle-offset", type=float, default=0.0, help="Initial angle offset in radians (default: 0.0)")
     parser.add_argument("--steps", type=int, default=180, help="Number of angle steps (default: 180)")
     parser.add_argument("--samples", type=int, default=10, help="Measurements per angle (default: 10)")
-    parser.add_argument("--step-delay", type=float, default=1.0, help="Delay between angle steps in seconds (default: 1.0)")
-    parser.add_argument("--initial-backoff", type=float, default=3.0, help="Initial backoff delay in seconds (default: 3.0)")
     parser.add_argument("--no-led", action="store_true", help="Turn off the LED during measurement (default: False)")
     parser.add_argument("--out", type=str, default="out", help="Output directory (default: 'out')")
     parser.add_argument("--comment", type=str, default="", help="Optional comment to include in the sidecar metadata")
@@ -131,9 +129,7 @@ def main():
         try:
             if not args.no_led:
                 owl.set_LED(True)
-            owl.set_target(0)
-            owl._serial.flush()
-            sleep(args.initial_backoff)
+            owl.goto(0)
 
             logger.info("Initializing measuring adapters...")
             adapters = []
@@ -147,8 +143,7 @@ def main():
             pbar_outer = tqdm(range(args.steps), desc="Overall Progress")
             for i in pbar_outer:
                 current_angle = step_size * i + args.angle_offset
-                owl.set_target(current_angle)
-                sleep(args.step_delay)
+                owl.goto(current_angle)
 
                 # Collect samples one at a time across all adapters, interleaved,
                 # so each adapter's readings are as close in time as possible.
