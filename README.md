@@ -104,5 +104,5 @@ Generates random values for testing without hardware.
 
 ## Related repositories
 
-[owl-firmware](https://github.com/sedlak477/owl-firmware): The firmware for the OWL platform.
+[owl-firmware](https://github.com/sedlak477/owl-firmware): The firmware for the OWL platform.  
 [pyowl](https://github.com/sedlak477/pyowl): A python library for interacting with the OWL.
