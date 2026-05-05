@@ -42,7 +42,7 @@ class NRF54BLECSIQAdapter(MeasurementAdapter):
 
         data = None
         line = None
-        for _ in range(2):
+        for _ in range(3):
             try:
                 line = self.serial.readline().decode('utf-8', errors='ignore').strip()
                 if line:
