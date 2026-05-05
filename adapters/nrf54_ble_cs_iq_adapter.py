@@ -52,7 +52,7 @@ class NRF54BLECSIQAdapter(MeasurementAdapter):
                 pass
 
         if data is None:
-            logger.warning(f"[NRF54BLECSIQAdapter:{self.name}] Error reading JSON from serial port.")
+            logger.warning(f"[NRF54BLECSIQAdapter:{self.name}] Error reading JSON from serial port. Last line: {line}")
             return {"status": "read_failed", "raw_response": line}
         
         data["status"] = "success"
