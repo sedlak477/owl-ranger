@@ -153,7 +153,7 @@ def main():
             logger.info("Initialization complete.")
 
             # We start with empty results list, will be populated within the loop
-            pbar_outer = tqdm(enumerate(angles), desc="Overall Progress")
+            pbar_outer = tqdm(list(enumerate(angles)), desc="Overall Progress")
             for step_idx, angle_idx in pbar_outer:
                 current_angle = step_size * angle_idx + args.angle_offset
                 owl.goto(current_angle)
