@@ -120,6 +120,7 @@ def main():
     angles = list(range(args.steps))
     if args.shuffle:
         args.seed = random.randrange(sys.maxsize) if args.seed is None else args.seed
+        logger.info(f"Shuffling angles with seed {args.seed}")
         random.Random(args.seed).shuffle(angles)
 
     all_measurements = []
