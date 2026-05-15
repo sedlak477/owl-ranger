@@ -153,9 +153,9 @@ def main():
             logger.info("Initialization complete.")
 
             # We start with empty results list, will be populated within the loop
-            pbar_outer = tqdm(angles, desc="Overall Progress")
-            for i in pbar_outer:
-                current_angle = step_size * i + args.angle_offset
+            pbar_outer = tqdm(enumerate(angles), desc="Overall Progress")
+            for step_idx, angle_idx in pbar_outer:
+                current_angle = step_size * angle_idx + args.angle_offset
                 owl.goto(current_angle)
 
                 # Collect samples one at a time across all adapters, interleaved,
@@ -171,7 +171,8 @@ def main():
                             "measured_angle": measured_angle,
                             "raw_angle": raw_angle,
                             "adapter_name": adapter.name,
-                            "angle_idx": i,
+                            "angle_idx": angle_idx,
+                            "step_idx": step_idx,
                             "sample_idx": sample_idx,
                             **meas
                         }
@@ -186,7 +187,7 @@ def main():
             logger.info(f"Measurements saved to {filename}")
 
             sidecar_filename = f"{args.out}/{timestamp}.md"
-            create_sidecar(sidecar_filename, args, adapters, timestamp, shuffle_seed)
+            create_sidecar(sidecar_filename, args, adapters, timestamp)
 
         finally:
             if not args.no_led:
