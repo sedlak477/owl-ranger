@@ -14,6 +14,8 @@ import uuid
 import logging
 import serial.tools.list_ports
 from wakepy import keep
+import random
+import sys
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -50,6 +52,8 @@ def parse_args():
     parser.add_argument("--angle-offset", type=float, default=0.0, help="Initial angle offset in radians (default: 0.0)")
     parser.add_argument("--steps", type=int, default=180, help="Number of angle steps (default: 180)")
     parser.add_argument("--samples", type=int, default=10, help="Measurements per angle (default: 10)")
+    parser.add_argument("--shuffle", action="store_true", help="Shuffle the order of the angles randomly (default: False)")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for angle shuffling (default: None/random seed)")
     parser.add_argument("--no-led", action="store_true", help="Turn off the LED during measurement (default: False)")
     parser.add_argument("--out", type=str, default="out", help="Output directory (default: 'out')")
     parser.add_argument("--comment", type=str, default="", help="Optional comment to include in the sidecar metadata")
@@ -72,6 +76,9 @@ def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, time
         f.write(f"- **Initial Angle Offset [rad]**: {args.angle_offset}\n")
         f.write(f"- **Number of Angle Steps**: {args.steps}\n")
         f.write(f"- **Measurements per Angle**: {args.samples}\n")
+        f.write(f"- **Shuffled Angles**: {args.shuffle}\n")
+        if args.shuffle:
+            f.write(f"- **Shuffle Seed**: {args.seed}\n")
         f.write(f"- **Adapters Configured**: {len(adapters)}\n")
         pretty_ts = datetime.strptime(timestamp, "%Y%m%d%H%M%S").strftime("%A, %d. %b %Y %H:%M:%S %Z")
         f.write(f"- **Timestamp**: {pretty_ts} ({timestamp})\n\n")
@@ -110,6 +117,11 @@ def main():
     start_time = time.time()
 
     step_size = 2 * math.pi / args.steps
+    angles = list(range(args.steps))
+    if args.shuffle:
+        args.seed = random.randrange(sys.maxsize) if args.seed is None else args.seed
+        random.Random(args.seed).shuffle(angles)
+
     all_measurements = []
 
     # Determine OWL port
@@ -138,9 +150,9 @@ def main():
                 adapters.append(ready_adapter)
                 
             logger.info("Initialization complete.")
-            
+
             # We start with empty results list, will be populated within the loop
-            pbar_outer = tqdm(range(args.steps), desc="Overall Progress")
+            pbar_outer = tqdm(angles, desc="Overall Progress")
             for i in pbar_outer:
                 current_angle = step_size * i + args.angle_offset
                 owl.goto(current_angle)
@@ -173,7 +185,7 @@ def main():
             logger.info(f"Measurements saved to {filename}")
 
             sidecar_filename = f"{args.out}/{timestamp}.md"
-            create_sidecar(sidecar_filename, args, adapters, timestamp)
+            create_sidecar(sidecar_filename, args, adapters, timestamp, shuffle_seed)
 
         finally:
             if not args.no_led:
