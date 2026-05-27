@@ -64,6 +64,7 @@ A generic adapter that reads NDJSON-formatted lines from a serial port.
 - `port`: **Required**. Serial port.
 - `baudrate`: (default: `115200`).
 - `timeout`: Read timeout in seconds (default: `3.0`).
+- `use_dtr`: If `true`, toggles DTR pin on only when reading measurements (default: `false`).
 
 #### `wifi_frequency`
 

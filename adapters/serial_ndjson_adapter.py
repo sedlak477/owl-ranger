@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 class SerialNDJSONAdapter(MeasurementAdapter):
     """
-    A generic serial adapter supporting textual (JSON or CSV-like) 
-    measurements from embedded devices.
+    A generic serial adapter supporting NDJSON measurements from embedded devices.
     """
-    def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 3.0, **kwargs):
+    def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 3.0, use_dtr: bool = False, **kwargs):
         super().__init__(name, **kwargs)
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
+        self.use_dtr = use_dtr
         self.serial = None
 
     def __enter__(self):
@@ -24,8 +24,10 @@ class SerialNDJSONAdapter(MeasurementAdapter):
         self.serial = serial.Serial(
             port=self.port,
             baudrate=self.baudrate,
-            timeout=self.timeout
+            timeout=self.timeout,
         )
+        if self.use_dtr:
+            self.serial.dtr = False
         self.serial.reset_input_buffer()
         return self
 
@@ -40,6 +42,9 @@ class SerialNDJSONAdapter(MeasurementAdapter):
         Assumes the device responds with one JSON line per measurement.
         """
         self.serial.reset_input_buffer()
+        
+        if self.use_dtr:
+            self.serial.dtr = True
 
         line = None
         data = None
@@ -62,6 +67,11 @@ class SerialNDJSONAdapter(MeasurementAdapter):
         if not data:
             logger.warning(f"[{self.name}] Could not parse line: {line}")
             return {"status": "parse_error", "raw_response": line}
+
+        if self.use_dtr:
+            self.serial.dtr = False
+            self.serial.reset_input_buffer()
+
 
         data["status"] = "success"
         data["raw_response"] = line
