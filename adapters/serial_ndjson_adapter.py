@@ -14,9 +14,9 @@ class SerialNDJSONAdapter(MeasurementAdapter):
     def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 3.0, use_dtr: bool = False, **kwargs):
         super().__init__(name, **kwargs)
         self.port = port
-        self.baudrate = baudrate
-        self.timeout = timeout
-        self.use_dtr = use_dtr
+        self.baudrate = int(baudrate)
+        self.timeout = float(timeout)
+        self.use_dtr = use_dtr.lower() in ("true", "1", "yes", "on") if isinstance(use_dtr, str) else bool(use_dtr)
         self.serial = None
 
     def __enter__(self):
