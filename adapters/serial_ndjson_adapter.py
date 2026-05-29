@@ -20,7 +20,7 @@ class SerialNDJSONAdapter(MeasurementAdapter):
         self.serial = None
 
     def __enter__(self):
-        logger.info(f"[SerialNDJSONAdapter:{self.name}] Connecting to {self.port} at {self.baudrate} bps...")
+        logger.info(f"[SerialNDJSONAdapter:{self.name}] Connecting to {self.port} at {self.baudrate} bps (using DTR: {self.use_dtr})...")
         self.serial = serial.Serial(
             port=self.port,
             baudrate=self.baudrate,
