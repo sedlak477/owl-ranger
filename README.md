@@ -1,5 +1,7 @@
 # OWL Ranger
 
+A script for stepping some orientations and recording measurements.
+
 ## Usage
 
 Requirements:
