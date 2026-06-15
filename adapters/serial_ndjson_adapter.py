@@ -72,6 +72,8 @@ class SerialNDJSONAdapter(MeasurementAdapter):
             self.serial.dtr = False
             self.serial.reset_input_buffer()
 
+        if not isinstance(data, dict):
+            data = {"data": data}
 
         data["status"] = "success"
         data["raw_response"] = line
