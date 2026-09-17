@@ -105,10 +105,12 @@ Generates random values for testing without hardware.
 
 ---
 
-## Related repositories
+## Related resources
 
 [owl-firmware](https://github.com/sedlak477/owl-firmware): The firmware for the OWL platform.  
-[pyowl](https://github.com/sedlak477/pyowl): A python library for interacting with the OWL.
+[pyowl](https://github.com/sedlak477/pyowl): A python library for interacting with the OWL.  
+[owl-hardware](https://github.com/sedlak477/owl-hardware): Hardware design files for the OWL platform.  
+[Dataset](https://doi.org/10.3217/kh254-z8374): Orientation-diverse BLE Channel Sounding and UWB ranging measurements recorded with the OWL.
 
 ## AI Disclosure
 
