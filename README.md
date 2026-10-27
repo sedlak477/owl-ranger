@@ -30,6 +30,19 @@ uv run measure.py \
 | `--out`             | `str`   | `out`   | Output directory.                                                        |
 | `--comment`         | `str`   | `""`    | Optional comment for metadata.                                           |
 | `--adapter`         | `list`  | `[]`    | Configuration for measurement adapters. Can be specified multiple times. |
+| `--recover`         | `str`   | `None`  | Convert an in-progress file from an aborted run to CSV instead of measuring. |
+
+### Partial results and recovery
+
+While measuring, records are streamed to a hidden `.<start-timestamp>.inprogress.jsonl` file (plus a matching `.md` sidecar) in the output directory, flushed after every angle step.
+On success they are converted to `<timestamp>.csv` / `<timestamp>.md` and removed.
+If a run is aborted after recording data, the in-progress files are kept (use `ls -a` to see them) and can be converted without the OWL:
+
+```sh
+uv run measure.py --recover out/.20261023160703.inprogress.jsonl
+```
+
+The recovered sidecar gets a `Recovery` section noting the record count and last step index.
 
 ### Adapter Configuration
 

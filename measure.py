@@ -1,6 +1,9 @@
 import re
 from datetime import datetime
 import os
+import json
+from types import TracebackType
+from typing import Any
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from pyowl import OWL
@@ -64,7 +67,77 @@ def parse_args():
         type=parse_adapter_config,
         help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial_ndjson,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
     )
+    parser.add_argument(
+        "--recover",
+        type=str,
+        default=None,
+        metavar="JSONL",
+        help="Convert an in-progress file (e.g. 'out/.20261023160703.inprogress.jsonl') from an aborted run to CSV instead of measuring. The OWL is not used."
+    )
     return parser.parse_args()
+
+
+TEMP_SUFFIX = ".inprogress"
+TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
+
+
+def temp_base_path(out_dir: str, start_timestamp: str) -> str:
+    """Path prefix of the hidden in-progress files, e.g. 'out/.20261023160703.inprogress'."""
+    return os.path.join(out_dir, f".{start_timestamp}{TEMP_SUFFIX}")
+
+
+def read_jsonl(path: str) -> list[dict[str, Any]]:
+    """Reads measurement records from a JSONL file, skipping a truncated or corrupt line from an aborted write."""
+    records = []
+    with open(path) as f:
+        for line_number, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                logger.warning(f"Skipping unparsable line {line_number} in {path}")
+    return records
+
+
+def write_csv(records: list[dict[str, Any]], filename: str):
+    pd.DataFrame(records).to_csv(filename, index=False)
+    logger.info(f"Measurements saved to {filename} ({len(records)} records)")
+
+
+def recover(jsonl_path: str):
+    """Writes the CSV and sidecar for an aborted run from its in-progress files, then removes them."""
+    if not jsonl_path.endswith(f"{TEMP_SUFFIX}.jsonl"):
+        raise ValueError(f"Not an in-progress file: {jsonl_path}")
+    records = read_jsonl(jsonl_path)
+    if not records:
+        raise ValueError(f"No records found in {jsonl_path}")
+
+    out_dir = os.path.dirname(jsonl_path)
+    temp_base = jsonl_path.removesuffix(".jsonl")
+    # Name the outputs after the last record, matching normal runs which are named after their end time
+    timestamp = datetime.fromisoformat(records[-1]["timestamp"]).strftime(TIMESTAMP_FORMAT)
+    final_base = os.path.join(out_dir, timestamp)
+    if os.path.exists(f"{final_base}.csv"):
+        raise FileExistsError(f"{final_base}.csv already exists, not overwriting")
+
+    write_csv(records, f"{final_base}.csv")
+
+    temp_sidecar = f"{temp_base}.md"
+    if os.path.exists(temp_sidecar):
+        last_step = records[-1]["step_idx"]
+        with open(temp_sidecar, "a") as f:
+            f.write("## Recovery\n\n")
+            f.write(f"- **Recovered from**: `{os.path.basename(jsonl_path)}`\n")
+            f.write("- **Note**: Timestamp above is the run start; the file name is the time of the last record\n")
+            f.write(f"- **Records**: {len(records)}\n")
+            f.write(f"- **Last Step Index**: {last_step} (run aborted, measurement incomplete)\n")
+        os.replace(temp_sidecar, f"{final_base}.md")
+        logger.info(f"Sidecar metadata saved to {final_base}.md")
+    else:
+        logger.warning(f"No sidecar found at {temp_sidecar}, metadata not recovered")
+
+    os.remove(jsonl_path)
 
 
 def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, timestamp: str):
@@ -80,7 +153,7 @@ def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, time
         if args.shuffle:
             f.write(f"- **Shuffle Seed**: {args.seed}\n")
         f.write(f"- **Adapters Configured**: {len(adapters)}\n")
-        pretty_ts = datetime.strptime(timestamp, "%Y%m%d%H%M%S").strftime("%A, %d. %b %Y %H:%M:%S %Z")
+        pretty_ts = datetime.strptime(timestamp, TIMESTAMP_FORMAT).strftime("%A, %d. %b %Y %H:%M:%S %Z")
         f.write(f"- **Timestamp**: {pretty_ts} ({timestamp})\n\n")
         
         if adapters:
@@ -112,9 +185,18 @@ def find_owl_port() -> str:
 
 def main():
     args = parse_args()
+
+    if args.recover:
+        recover(args.recover)
+        return
+
     os.makedirs(args.out, exist_ok=True)
 
     start_time = time.time()
+    start_timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+    temp_base = temp_base_path(args.out, start_timestamp)
+    temp_jsonl = f"{temp_base}.jsonl"
+    temp_sidecar = f"{temp_base}.md"
 
     step_size = 2 * math.pi / args.steps
     angles = list(range(args.steps))
@@ -123,14 +205,26 @@ def main():
         logger.info(f"Shuffling angles with seed {args.seed}")
         random.Random(args.seed).shuffle(angles)
 
-    all_measurements = []
-
     # Determine OWL port
     owl_port = args.owl_port
     if owl_port.lower() == "auto":
         owl_port = find_owl_port()
 
+    def handle_abort(exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None) -> bool:
+        """Registered first so it runs last, after the in-progress file is closed and flushed."""
+        if exc_type is None:
+            return False
+        if os.path.exists(temp_jsonl) and os.path.getsize(temp_jsonl) > 0:
+            logger.error(f"Measurement aborted. Recover partial data with: --recover {temp_jsonl}")
+        else:
+            # Nothing was recorded, so drop the in-progress files instead of leaving an orphaned sidecar
+            for path in (temp_jsonl, temp_sidecar):
+                if os.path.exists(path):
+                    os.remove(path)
+        return False
+
     with ExitStack() as stack:
+        stack.push(handle_abort)
         # Make sure logs don't mess up the progress bars
         stack.enter_context(logging_redirect_tqdm())
         # Keep the system awake during the measurement
@@ -152,7 +246,11 @@ def main():
                 
             logger.info("Initialization complete.")
 
-            # We start with empty results list, will be populated within the loop
+            # Stream records to a hidden in-progress file so an aborted run can be recovered with --recover
+            create_sidecar(temp_sidecar, args, adapters, start_timestamp)
+            jsonl_file = stack.enter_context(open(temp_jsonl, "a"))
+            logger.info(f"Streaming measurements to {temp_jsonl}")
+
             pbar_outer = tqdm(list(enumerate(angles)), desc="Overall Progress")
             for step_idx, angle_idx in pbar_outer:
                 current_angle = step_size * angle_idx + args.angle_offset
@@ -176,18 +274,18 @@ def main():
                             "sample_idx": sample_idx,
                             **meas
                         }
-                        all_measurements.append(meas_record)
+                        jsonl_file.write(json.dumps(meas_record, default=str) + "\n")
+                # Flush once per step: cheap, and bounds the loss on a crash to the current step
+                jsonl_file.flush()
 
-            df = pd.DataFrame(all_measurements)
-            
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"{args.out}/{timestamp}.csv"
+            jsonl_file.close()
 
-            df.to_csv(filename, index=False)
-            logger.info(f"Measurements saved to {filename}")
+            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+            write_csv(read_jsonl(temp_jsonl), f"{args.out}/{timestamp}.csv")
+            create_sidecar(f"{args.out}/{timestamp}.md", args, adapters, timestamp)
 
-            sidecar_filename = f"{args.out}/{timestamp}.md"
-            create_sidecar(sidecar_filename, args, adapters, timestamp)
+            os.remove(temp_jsonl)
+            os.remove(temp_sidecar)
 
         finally:
             if not args.no_led:
