@@ -30,7 +30,12 @@ uv run measure.py \
 | `--out`             | `str`   | `out`   | Output directory.                                                        |
 | `--comment`         | `str`   | `""`    | Optional comment for metadata.                                           |
 | `--adapter`         | `list`  | `[]`    | Configuration for measurement adapters. Can be specified multiple times. |
+| `--motor`           | `str`   | `""`    | SimpleFOC motor settings applied at the start, e.g. `VP=0.5,AP=20,LV=3.14`. Can be specified multiple times. |
 | `--recover`         | `str`   | `None`  | Convert an in-progress file from an aborted run to CSV instead of measuring. |
+
+### Motor settings
+
+`--motor` sets SimpleFOC motor settings through [pyowl](https://github.com/sedlak477/pyowl) before the OWL moves to 0, e.g. the velocity and angle PID gains (`VP`, `VI`, `VD`, `VR`, `VL`, `AP`, ...) and the velocity limit (`LV`, rad/s). The codes are the firmware's `M` commands without the `M`. Settings stay in effect until the OWL restarts, so the sidecar records the angle/velocity PID settings and limits read back from the OWL on every run, marking the ones set via `--motor`.
 
 ### Partial results and recovery
 

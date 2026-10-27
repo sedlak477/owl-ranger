@@ -6,7 +6,7 @@ from types import TracebackType
 from typing import Any
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from pyowl import OWL
+from pyowl import OWL, MOTOR_SETTINGS, DEFAULT_SNAPSHOT
 import math
 import time
 from time import sleep
@@ -49,6 +49,25 @@ def parse_adapter_config(config_str: str) -> MeasurementAdapter:
         raise argparse.ArgumentTypeError(f"Failed to instantiate adapter '{adapter_type}': {e}")
 
 
+def parse_motor_settings(config_str: str) -> dict[str, float]:
+    """Parses a comma-separated string of SimpleFOC motor settings, e.g. 'VP=0.5,LV=3.14'."""
+    settings = {}
+    for part in config_str.split(","):
+        if not part.strip():
+            continue
+        if "=" not in part:
+            raise argparse.ArgumentTypeError(f"Motor setting '{part}' is not of the form CODE=value.")
+        k, v = part.split("=", 1)
+        k = k.strip().upper()
+        if k not in MOTOR_SETTINGS:
+            raise argparse.ArgumentTypeError(f"Unknown motor setting '{k}', expected one of {', '.join(MOTOR_SETTINGS)}.")
+        try:
+            settings[k] = float(v)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"Motor setting '{k}' has non-numeric value '{v.strip()}'.")
+    return settings
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="OWL Measurement Script")
     parser.add_argument("--owl-port", type=str, default="auto", help="Serial port for the OWL platform (default: 'auto' for auto-discovery)")
@@ -68,13 +87,23 @@ def parse_args():
         help="Adapter configuration string, e.g., 'type=dummy,name=sen1' or 'type=serial_ndjson,name=s1,port=/dev/ttyACM0,baudrate=115200'. Can be specified multiple times."
     )
     parser.add_argument(
+        "--motor",
+        action="append",
+        default=[],
+        type=parse_motor_settings,
+        help="SimpleFOC motor settings applied at the start, e.g. 'VP=0.5,VI=10,AP=20,LV=3.14'. Codes are the firmware's 'M' commands without the 'M'. Can be specified multiple times."
+    )
+    parser.add_argument(
         "--recover",
         type=str,
         default=None,
         metavar="JSONL",
         help="Convert an in-progress file (e.g. 'out/.20261023160703.inprogress.jsonl') from an aborted run to CSV instead of measuring. The OWL is not used."
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    # Merge repeated --motor options, later values win
+    args.motor = {k: v for settings in args.motor for k, v in settings.items()}
+    return args
 
 
 TEMP_SUFFIX = ".inprogress"
@@ -140,7 +169,7 @@ def recover(jsonl_path: str):
     os.remove(jsonl_path)
 
 
-def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, timestamp: str):
+def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, timestamp: str, motor_settings: dict[str, float]):
     """Generates the measurement sidecar markdown file with all metadata and adapter configurations."""
     with open(filename, "w") as f:
         f.write("# Measurement Metadata\n\n")
@@ -155,7 +184,14 @@ def create_sidecar(filename: str, args: argparse.Namespace, adapters: list, time
         f.write(f"- **Adapters Configured**: {len(adapters)}\n")
         pretty_ts = datetime.strptime(timestamp, TIMESTAMP_FORMAT).strftime("%A, %d. %b %Y %H:%M:%S %Z")
         f.write(f"- **Timestamp**: {pretty_ts} ({timestamp})\n\n")
-        
+
+        # Read back from the OWL at the start, so this also covers settings left over from earlier runs
+        f.write("## Motor Settings\n\n")
+        for k, v in motor_settings.items():
+            set_note = " (set via --motor)" if k in args.motor else ""
+            f.write(f"- **{k}** ({MOTOR_SETTINGS[k]}): {v}{set_note}\n")
+        f.write("\n")
+
         if adapters:
             f.write("## Adapter Configurations\n\n")
             for adapter in adapters:
@@ -236,6 +272,10 @@ def main():
         try:
             if not args.no_led:
                 owl.set_LED(True)
+            if args.motor:
+                logger.info(f"Applying motor settings: {args.motor}")
+                owl.set_setting(args.motor)
+            motor_settings = owl.get_setting(DEFAULT_SNAPSHOT + [k for k in args.motor if k not in DEFAULT_SNAPSHOT])
             owl.goto(0)
 
             logger.info("Initializing measuring adapters...")
@@ -247,7 +287,7 @@ def main():
             logger.info("Initialization complete.")
 
             # Stream records to a hidden in-progress file so an aborted run can be recovered with --recover
-            create_sidecar(temp_sidecar, args, adapters, start_timestamp)
+            create_sidecar(temp_sidecar, args, adapters, start_timestamp, motor_settings)
             jsonl_file = stack.enter_context(open(temp_jsonl, "a"))
             logger.info(f"Streaming measurements to {temp_jsonl}")
 
@@ -282,7 +322,7 @@ def main():
 
             timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
             write_csv(read_jsonl(temp_jsonl), f"{args.out}/{timestamp}.csv")
-            create_sidecar(f"{args.out}/{timestamp}.md", args, adapters, timestamp)
+            create_sidecar(f"{args.out}/{timestamp}.md", args, adapters, timestamp, motor_settings)
 
             os.remove(temp_jsonl)
             os.remove(temp_sidecar)
