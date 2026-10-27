@@ -116,7 +116,7 @@ wheels = [
 [[package]]
 name = "pyowl"
 version = "0.1.0"
-source = { git = "https://github.com/sedlak477/pyowl.git#8e096a39688c73b2bb2e01f5a5a1e40dfc56489e" }
+source = { git = "https://github.com/sedlak477/pyowl.git#97b399e7e21685ca035c1e44e3fcd9ee8397a20a" }
 dependencies = [
     { name = "pyserial" },
 ]
