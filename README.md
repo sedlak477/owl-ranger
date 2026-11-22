@@ -121,6 +121,14 @@ Generates random values for testing without hardware.
 - `max_val`: (default: `100.0`).
 - `delay`: Simulated latency in seconds (default: `0.05`).
 
+#### `wait`
+
+Records nothing, each measurement just sleeps.
+
+- `duration`: **Required**. Sleep time in seconds.
+
+The duration is per sample, so with `--samples N` each angle step waits `N * duration`.
+
 ---
 
 ## Related resources
