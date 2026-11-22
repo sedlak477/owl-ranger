@@ -14,6 +14,7 @@ _BUILTIN_ADAPTERS = {
     "pico_nrf24_sniffer": (".pico_nrf24_sniffer_adapter", "PicoNRF24SnifferAdapter"),
     "wifi_frequency": (".wifi_frequency_adapter", "WifiFrequencyAdapter"),
     "qualisys": (".qualisys_adapter", "QualisysAdapter"),
+    "wait": (".wait_adapter", "WaitAdapter"),
 }
 
 def register_adapter(adapter_type: str, adapter_class: Type[MeasurementAdapter]):
