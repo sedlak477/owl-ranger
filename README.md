@@ -86,6 +86,21 @@ A generic adapter that reads NDJSON-formatted lines from a serial port.
 - `timeout`: Read timeout in seconds (default: `3.0`).
 - `use_dtr`: If `true`, toggles DTR pin on only when reading measurements (default: `false`).
 
+#### `serial_cobs`
+
+A generic adapter for devices that answer with one binary frame, COBS-encoded and terminated by `0x00`.
+Each measurement clears the input, sends the optional request, and returns the next frame.
+
+- `port`: **Required**. Serial port.
+- `baudrate`: (default: `115200`; ignored by USB CDC devices).
+- `timeout`: Seconds to wait for the frame (default: `1.0`).
+- `request`: Bytes to send before each measurement, with Python string escapes, e.g. `request=x` or `request=x\n` (default: none, just read the next frame).
+- `crc`: `crc16` checks the frame's last two bytes as a little-endian CRC-16/CCITT-FALSE over the rest (default: `none`).
+- `settle`: Seconds to wait after opening before discarding input, so a frame the device sends when the port opens is not taken as the first reply (default: `0.3`).
+
+Returns `frame` (the frame with COBS removed, as hex, otherwise untouched), `cobs_ok`, `crc_ok` when a CRC is configured, and `bad_frames`, the running count of bad frames.
+A bad frame is returned with status `failed` and kept in the data; it is never retried. What is inside the frame is up to the device and is decoded afterwards, not here.
+
 #### `wifi_frequency`
 
 Captures the current Wi-Fi frequency/channel of the host machine.
@@ -128,6 +143,17 @@ Records nothing, each measurement just sleeps.
 - `duration`: **Required**. Sleep time in seconds.
 
 The duration is per sample, so with `--samples N` each angle step waits `N * duration`.
+
+### Logging a device that sends on its own
+
+`log_frames.py` writes every COBS frame a serial device sends, with the host time it arrived, for devices that are not asked for each measurement (for example the UWB tags, which report every exchange another device starts).
+It uses the same reader as the `serial_cobs` adapter and writes the same fields, one JSON line per frame, until Ctrl+C or `--duration`:
+
+```sh
+uv run log_frames.py --port /dev/ttyACM0 --crc crc16 --out out/tag.jsonl
+```
+
+If the port disappears (USB unplugged) it waits for it to come back and carries on in the same file.
 
 ---
 
