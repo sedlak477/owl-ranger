@@ -86,6 +86,22 @@ A generic adapter that reads NDJSON-formatted lines from a serial port.
 - `timeout`: Read timeout in seconds (default: `3.0`).
 - `use_dtr`: If `true`, toggles DTR pin on only when reading measurements (default: `false`).
 
+#### `serial_cobs`
+
+A generic adapter for devices that answer with one binary frame, COBS-encoded and terminated by `0x00`.
+Each measurement clears the input, sends the optional request, and returns the next frame.
+
+- `port`: **Required**. Serial port.
+- `baudrate`: Connection speed (default: `115200`).
+- `timeout`: Seconds to wait for the frame (default: `1.0`).
+- `request`: Bytes to send before each measurement, with Python string escapes, e.g. `request=x` or `request=x\n` (default: none, just read the next frame).
+- `crc`: `crc16` checks the frame's last two bytes as a little-endian CRC-16/CCITT-FALSE over the rest (default: `none`).
+- `settle`: Seconds to wait after opening before discarding input, so a frame the device sends when the port opens is not taken as the first reply (default: `0.3`).
+
+Returns `frame` (the frame with COBS removed, as hex, otherwise untouched), `cobs_ok`, `crc_ok` when a CRC is configured, and `bad_frames`, the running count of bad frames.
+The status is `success`, `failed` for a bad frame, or `timeout` when no frame arrives in time.
+A bad frame is kept in the data and counted; it is never retried. What is inside the frame is up to the device and is decoded afterwards, not here.
+
 #### `wifi_frequency`
 
 Captures the current Wi-Fi frequency/channel of the host machine.

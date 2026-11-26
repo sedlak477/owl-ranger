@@ -8,6 +8,7 @@ _REGISTRY: Dict[str, Type[MeasurementAdapter]] = {}
 _BUILTIN_ADAPTERS = {
     "dummy": (".dummy_adapter", "DummyAdapter"),
     "serial_ndjson": (".serial_ndjson_adapter", "SerialNDJSONAdapter"),
+    "serial_cobs": (".serial_cobs_adapter", "SerialCOBSAdapter"),
     "qm33120w": (".qm33120w_adapter", "QM33120WAdapter"),
     "nrf54_ble_cs": (".nrf54_ble_cs_adapter", "NRF54BLECSAdapter"),
     "nrf54_ble_cs_iq": (".nrf54_ble_cs_iq_adapter", "NRF54BLECSIQAdapter"),
