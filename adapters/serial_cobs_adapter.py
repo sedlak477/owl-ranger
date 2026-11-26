@@ -97,11 +97,13 @@ class SerialCOBSAdapter(MeasurementAdapter):
     A generic serial adapter for devices that answer with one binary frame,
     COBS-encoded and terminated by 0x00.
 
-    measure() clears the input, sends the optional request, and returns the
-    next frame. The frame is returned decoded (COBS removed) but otherwise
-    untouched, as hex: what is inside is the device's business, not this
-    adapter's. A frame that fails its CRC is kept, marked and counted, never
-    retried.
+    Each measurement clears the input, sends the optional request, and returns
+    the next frame. Returns "frame" (the frame with COBS removed, as hex,
+    otherwise untouched), "cobs_ok", "crc_ok" when a CRC is configured, and
+    "bad_frames", the running count of bad frames. The status is "success",
+    "failed" for a bad frame, or "timeout" when no frame arrives in time. A bad
+    frame is kept in the data and counted; it is never retried. What is inside
+    the frame is up to the device and is decoded afterwards, not here.
     """
 
     def __init__(self, name: str, port: str, baudrate: int = 115200, timeout: float = 1.0,
