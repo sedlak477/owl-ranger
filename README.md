@@ -145,18 +145,6 @@ Records nothing, each measurement just sleeps.
 
 The duration is per sample, so with `--samples N` each angle step waits `N * duration`.
 
-### Logging a device that sends on its own
-
-`log_frames.py` writes every COBS frame a serial device sends, with the host time it arrived, for devices that are not asked for each measurement (for example the UWB tags, which report every exchange another device starts).
-It uses the same reader as the `serial_cobs` adapter and writes one JSON line per frame, until Ctrl+C or `--duration`: `timestamp` (ISO 8601), `t_host` (epoch seconds), and the adapter's `frame`, `cobs_ok` and `crc_ok`. A bad frame is written and counted like any other.
-
-```sh
-uv run log_frames.py --port /dev/serial/by-id/usb-ZEPHYR_uwb-responder_*-if00 \
-    --crc crc16 --out out/tag.jsonl
-```
-
-If the port disappears (USB unplugged) it waits for it to come back and carries on in the same file.
-
 ---
 
 ## Related resources

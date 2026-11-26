@@ -38,10 +38,7 @@ def crc16_ok(frame: bytes) -> bool:
 
 
 class CobsReader:
-    """Reads 0x00-delimited COBS frames from an open serial port.
-
-    Shared by the adapter and by log_frames.py, so both read the same way.
-    """
+    """Reads 0x00-delimited COBS frames from an open serial port."""
 
     def __init__(self, ser: serial.Serial, crc: str = "none"):
         if crc not in CRCS:
